@@ -1,0 +1,11 @@
+# vLLM service URL (OpenAI-compatible protocol)
+VLLM_URL=http://localhost:8000/v1
+
+# Model name (mapped to BIG_MODEL / MIDDLE_MODEL / SMALL_MODEL)
+MODEL=glm-5
+
+# API key (keep default if vLLM has no auth)
+API_KEY=sk-placeholder
+
+# claude-code-proxy listen port
+PROXY_PORT=8082

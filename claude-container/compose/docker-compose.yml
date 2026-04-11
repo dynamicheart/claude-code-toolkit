@@ -1,0 +1,13 @@
+services:
+  claude:
+    build: ..
+    container_name: claude
+    env_file: .env
+    volumes:
+      - ${WORKSPACE:-.}:/workspace
+      - claude-home:/home/claude
+    ports:
+      - "${PROXY_PORT:-8082}:${PROXY_PORT:-8082}"
+
+volumes:
+  claude-home:
