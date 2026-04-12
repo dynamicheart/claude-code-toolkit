@@ -45,7 +45,7 @@ docker run -d --name claude \
     -v $(pwd):/workspace \
     -e USER_UID=$(id -u) \
     -e USER_GID=$(id -g) \
-    claude-code:latest
+    ghcr.io/dynamicheart/claude-code-toolkit/claude-code:latest
 ```
 
 ### 3. 使用
@@ -101,7 +101,7 @@ docker run -d --name claude \
     -v ~/project-b:/workspace/b \
     -e USER_UID=$(id -u) \
     -e USER_GID=$(id -g) \
-    claude-code:latest
+    ghcr.io/dynamicheart/claude-code-toolkit/claude-code:latest
 
 # 指定工作目录
 docker exec -it -w /workspace/a claude claude

@@ -45,7 +45,7 @@ docker run -d --name claude \
     -v $(pwd):/workspace \
     -e USER_UID=$(id -u) \
     -e USER_GID=$(id -g) \
-    claude-code:latest
+    ghcr.io/dynamicheart/claude-code-toolkit/claude-code:latest
 ```
 
 ### 3. Use Claude
@@ -101,7 +101,7 @@ docker run -d --name claude \
     -v ~/project-b:/workspace/b \
     -e USER_UID=$(id -u) \
     -e USER_GID=$(id -g) \
-    claude-code:latest
+    ghcr.io/dynamicheart/claude-code-toolkit/claude-code:latest
 
 # Work in a specific project
 docker exec -it -w /workspace/a claude claude

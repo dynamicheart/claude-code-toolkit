@@ -1,5 +1,7 @@
 # Claude Code Toolkit
 
+[![Docker](https://img.shields.io/badge/ghcr.io-dynamicheart%2Fclaude--code--toolkit%2Fclaude--code-blue)](https://github.com/dynamicheart/claude-code-toolkit/pkgs/container/claude-code-toolkit%2Fclaude-code)
+
 Connect Claude Code to self-hosted vLLM services for testing model agent capabilities.
 
 ## Architecture
@@ -43,7 +45,7 @@ docker run -d --name claude \
     -v ~/claude-proxy.conf:/etc/claude-proxy.conf \
     -v $(pwd):/workspace \
     -e USER_UID=$(id -u) -e USER_GID=$(id -g) \
-    claude-code:latest
+    ghcr.io/dynamicheart/claude-code-toolkit/claude-code:latest
 
 # 3. Use
 docker exec -it claude claude
