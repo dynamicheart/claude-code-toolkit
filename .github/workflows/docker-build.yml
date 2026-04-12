@@ -32,7 +32,7 @@ jobs:
         run: |
           DATE=$(date -u +%Y%m%d)
           SHA=${GITHUB_SHA::7}
-          echo "tags=latest,${DATE}-${SHA}" >> "$GITHUB_OUTPUT"
+          echo "tags=${DATE}-${SHA}" >> "$GITHUB_OUTPUT"
           echo "Building tags: latest, ${DATE}-${SHA}"
 
       - name: Build and push
