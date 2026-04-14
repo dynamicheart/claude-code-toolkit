@@ -16,7 +16,8 @@ RUN apk add --no-cache git curl build-base less bash su-exec python3 py3-pip
 RUN pip install --break-system-packages -U claude-code-proxy
 
 # Install Claude Code CLI
-RUN npm install -g @anthropic-ai/claude-code@latest
+RUN npm install -g @anthropic-ai/claude-code@latest \
+    && echo "Claude Code version: $(claude --version)"
 
 RUN mkdir -p /workspace
 
