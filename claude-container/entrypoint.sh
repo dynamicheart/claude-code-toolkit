@@ -67,13 +67,46 @@ if [ -n "$VLLM_URL" ]; then
     export MIDDLE_MODEL="$MODEL"
     export SMALL_MODEL="$MODEL"
 
+    PROXY_LOG="/var/log/claude-proxy.log"
     echo "[proxy] Starting claude-code-proxy -> ${VLLM_URL} (port: ${PROXY_PORT})"
-    uvicorn server:app --host 0.0.0.0 --port "$PROXY_PORT" &
-    sleep 2
+    claude-code-proxy --port "$PROXY_PORT" >> "$PROXY_LOG" 2>&1 &
+    PROXY_PID=$!
+    echo "[proxy] PID: ${PROXY_PID}, log: ${PROXY_LOG}"
+
+    # Health check — wait up to 120s for proxy to become ready
+    PROXY_READY=false
+    for i in $(seq 1 120); do
+        if curl -sf "http://127.0.0.1:${PROXY_PORT}/v1/models" >/dev/null 2>&1; then
+            echo "[proxy] Ready! (verified in ~${i}s)"
+            PROXY_READY=true
+            break
+        fi
+        if ! kill -0 "$PROXY_PID" 2>/dev/null; then
+            echo "[proxy] ERROR: uvicorn crashed during startup!"
+            echo "--- last 20 lines of log ---"
+            tail -20 "$PROXY_LOG" 2>/dev/null || echo "(no log yet)"
+            exit 1
+        fi
+        sleep 1
+    done
+    if [ "$PROXY_READY" = false ]; then
+        echo "[proxy] WARNING: proxy not responding after 10s (PID ${PROXY_PID} still alive)"
+    fi
 
     export ANTHROPIC_BASE_URL="http://127.0.0.1:${PROXY_PORT}"
     export ANTHROPIC_API_KEY="anyvalue"
     echo "[proxy] Claude will use ${ANTHROPIC_BASE_URL}"
+
+    # Persist env vars so docker exec can pick them up
+    cat > /etc/claude-proxy.env <<ENVEOF
+export ANTHROPIC_BASE_URL="http://127.0.0.1:${PROXY_PORT}"
+export ANTHROPIC_API_KEY="anyvalue"
+export OPENAI_API_KEY="$API_KEY"
+export OPENAI_BASE_URL="$VLLM_URL"
+export BIG_MODEL="$MODEL"
+export MIDDLE_MODEL="$MODEL"
+export SMALL_MODEL="$MODEL"
+ENVEOF
 fi
 
 exec su-exec "${USER_NAME}" "$@"

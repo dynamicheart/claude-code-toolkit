@@ -18,4 +18,4 @@ export BIG_MODEL="$MODEL"
 export MIDDLE_MODEL="$MODEL"
 export SMALL_MODEL="$MODEL"
 
-exec uvicorn server:app --host 0.0.0.0 --port "$PROXY_PORT"
+exec claude-code-proxy --port "$PROXY_PORT"

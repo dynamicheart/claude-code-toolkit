@@ -21,7 +21,7 @@ API_KEY=${API_KEY:-sk-placeholder}
 PROXY_PORT=${PROXY_PORT:-8082}
 
 # Kill old proxy
-kill $(pgrep -f "uvicorn server:app") 2>/dev/null && echo "[proxy] Stopped old process" || true
+kill $(pgrep -f "claude-code-proxy") 2>/dev/null && echo "[proxy] Stopped old process" || true
 sleep 1
 
 # Start new proxy
@@ -32,7 +32,7 @@ export MIDDLE_MODEL="$MODEL"
 export SMALL_MODEL="$MODEL"
 
 echo "[proxy] Starting claude-code-proxy -> ${VLLM_URL} (port: ${PROXY_PORT})"
-uvicorn server:app --host 0.0.0.0 --port "$PROXY_PORT" &
+claude-code-proxy --port "$PROXY_PORT" &
 
 sleep 2
 echo "[proxy] Reload done, Claude will use http://127.0.0.1:${PROXY_PORT}"

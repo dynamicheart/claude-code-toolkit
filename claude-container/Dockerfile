@@ -16,14 +16,19 @@ RUN apk add --no-cache git curl build-base less bash su-exec python3 py3-pip
 RUN pip install --break-system-packages -U claude-code-proxy
 
 # Install Claude Code CLI
-RUN npm install -g @anthropic-ai/claude-code@~2.1.0
+RUN npm install -g @anthropic-ai/claude-code@latest
 
 RUN mkdir -p /workspace
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY reload_proxy.sh /usr/local/bin/reload_proxy.sh
 COPY start_proxy.sh /opt/start_proxy.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/reload_proxy.sh /opt/start_proxy.sh
+COPY claude-wrapper.sh /usr/local/bin/claude-wrapper.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/reload_proxy.sh /opt/start_proxy.sh /usr/local/bin/claude-wrapper.sh
+
+# Rename real claude -> claude.real, wrapper -> claude
+RUN mv /usr/local/bin/claude /usr/local/bin/claude.real \
+    && mv /usr/local/bin/claude-wrapper.sh /usr/local/bin/claude
 
 WORKDIR /workspace
 
