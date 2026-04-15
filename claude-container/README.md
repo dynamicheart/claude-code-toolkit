@@ -10,7 +10,7 @@ Connect Claude Code to your self-hosted vLLM service (OpenAI-compatible) via a s
 Your terminal
   │
   ▼
-docker exec -it claude claude
+docker exec -it claude_container claude
   │
   ▼
 ┌─────────────────────────────┐
@@ -40,7 +40,7 @@ vim ~/claude-proxy.conf
 ### 2. Run container
 
 ```bash
-docker run -d --name claude \
+docker run -d --name claude_container \
     -v ~/claude-proxy.conf:/etc/claude-proxy.conf \
     -v $(pwd):/workspace \
     -e USER_UID=$(id -u) \
@@ -51,7 +51,11 @@ docker run -d --name claude \
 ### 3. Use Claude
 
 ```bash
-docker exec -it claude claude
+# Default working directory: /workspace
+docker exec -it claude_container claude
+
+# Specify a project directory (Claude Code uses this as project root)
+docker exec -it -w /workspace/my-project claude_container claude
 ```
 
 ## Switch vLLM URL (no container restart)
@@ -61,7 +65,7 @@ docker exec -it claude claude
 vim ~/claude-proxy.conf
 
 # 2. Hot-reload proxy (Claude sessions are preserved)
-docker exec claude reload_proxy
+docker exec claude_container reload_proxy
 ```
 
 ## Configuration
@@ -89,13 +93,13 @@ docker exec claude reload_proxy
 
 ```bash
 echo "VLLM_URL=http://192.168.1.100:8000/v1" > ~/claude-proxy.conf
-docker exec claude reload_proxy
+docker exec claude_container reload_proxy
 ```
 
 ### Multiple project directories
 
 ```bash
-docker run -d --name claude \
+docker run -d --name claude_container \
     -v ~/claude-proxy.conf:/etc/claude-proxy.conf \
     -v ~/project-a:/workspace/a \
     -v ~/project-b:/workspace/b \
@@ -104,7 +108,7 @@ docker run -d --name claude \
     ghcr.io/dynamicheart/claude-code-toolkit/claude-code:latest
 
 # Work in a specific project
-docker exec -it -w /workspace/a claude claude
+docker exec -it -w /workspace/a claude_container claude
 ```
 
 ### With docker compose
@@ -114,7 +118,7 @@ cd claude-container/compose/
 cp .env.example .env
 vim .env
 docker compose up -d --build
-docker exec -it claude claude
+docker exec -it claude_container claude
 ```
 
 ## Files
@@ -123,8 +127,9 @@ docker exec -it claude claude
 claude-container/
 ├── Dockerfile                    # Image build
 ├── entrypoint.sh                 # UID/GID mapping + auto-start proxy
+├── proxy-env.sh                  # Shared proxy config (sourced by scripts)
+├── claude-wrapper.sh             # Wrapper for docker exec (sources env)
 ├── reload_proxy.sh               # Hot-reload proxy without restart
-├── start_proxy.sh                # Standalone proxy startup (debug)
 ├── claude-proxy.conf.example     # Config template for docker run
 ├── compose/
 │   ├── docker-compose.yml        # Compose orchestration (optional)

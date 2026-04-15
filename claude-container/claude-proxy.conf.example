@@ -1,7 +1,7 @@
 # vLLM service URL (OpenAI-compatible protocol)
 VLLM_URL=http://localhost:8000/v1
 
-# Model name (mapped to BIG_MODEL / MIDDLE_MODEL / SMALL_MODEL)
+# Model name on vLLM (also used as Claude Code model name)
 MODEL=glm-5
 
 # API key (keep default if vLLM has no auth)

@@ -17,19 +17,34 @@ RUN pip install --break-system-packages -U claude-code-proxy
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code@latest \
-    && echo "Claude Code version: $(claude --version)"
+    && claude --version > /etc/claude-code-version \
+    && echo "Claude Code version: $(cat /etc/claude-code-version)"
 
 RUN mkdir -p /workspace
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY reload_proxy.sh /usr/local/bin/reload_proxy.sh
-COPY start_proxy.sh /opt/start_proxy.sh
 COPY claude-wrapper.sh /usr/local/bin/claude-wrapper.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/reload_proxy.sh /opt/start_proxy.sh /usr/local/bin/claude-wrapper.sh
+COPY proxy-env.sh /usr/local/bin/proxy-env.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/reload_proxy.sh /usr/local/bin/claude-wrapper.sh /usr/local/bin/proxy-env.sh
 
 # Rename real claude -> claude.real, wrapper -> claude
 RUN mv /usr/local/bin/claude /usr/local/bin/claude.real \
     && mv /usr/local/bin/claude-wrapper.sh /usr/local/bin/claude
+
+RUN mkdir -p /root/.claude/skills /root/.claude/agents /root/.claude/commands \
+    /etc/claude-code/.claude/skills /etc/claude-code/.claude/agents /etc/claude-code/.claude/commands
+
+# Pre-warm: trigger first-run initialization before offline ENV is set
+RUN timeout 10 claude.real --help > /dev/null 2>&1 || true
+
+# Offline-friendly defaults (set AFTER pre-warm so build can reach anthropic)
+ENV DISABLE_AUTOUPDATER=1
+ENV DISABLE_TELEMETRY=1
+ENV DISABLE_ERROR_REPORTING=1
+ENV CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+ENV CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL=1
+ENV CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE=1
 
 WORKDIR /workspace
 

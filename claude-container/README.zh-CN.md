@@ -10,7 +10,7 @@
 你的终端
   │
   ▼
-docker exec -it claude claude
+docker exec -it claude_container claude
   │
   ▼
 ┌─────────────────────────────┐
@@ -40,7 +40,7 @@ vim ~/claude-proxy.conf
 ### 2. 启动容器
 
 ```bash
-docker run -d --name claude \
+docker run -d --name claude_container \
     -v ~/claude-proxy.conf:/etc/claude-proxy.conf \
     -v $(pwd):/workspace \
     -e USER_UID=$(id -u) \
@@ -51,7 +51,11 @@ docker run -d --name claude \
 ### 3. 使用
 
 ```bash
-docker exec -it claude claude
+# 默认工作目录：/workspace
+docker exec -it claude_container claude
+
+# 指定项目目录（Claude Code 以此为项目根目录）
+docker exec -it -w /workspace/my-project claude_container claude
 ```
 
 ## 切换 vLLM 地址（不删容器）
@@ -61,7 +65,7 @@ docker exec -it claude claude
 vim ~/claude-proxy.conf
 
 # 2. 热重载（Claude 会话不丢失）
-docker exec claude reload_proxy
+docker exec claude_container reload_proxy
 ```
 
 ## 配置说明
@@ -89,13 +93,13 @@ docker exec claude reload_proxy
 
 ```bash
 echo "VLLM_URL=http://192.168.1.100:8000/v1" > ~/claude-proxy.conf
-docker exec claude reload_proxy
+docker exec claude_container reload_proxy
 ```
 
 ### 挂载多个项目目录
 
 ```bash
-docker run -d --name claude \
+docker run -d --name claude_container \
     -v ~/claude-proxy.conf:/etc/claude-proxy.conf \
     -v ~/project-a:/workspace/a \
     -v ~/project-b:/workspace/b \
@@ -104,7 +108,7 @@ docker run -d --name claude \
     ghcr.io/dynamicheart/claude-code-toolkit/claude-code:latest
 
 # 指定工作目录
-docker exec -it -w /workspace/a claude claude
+docker exec -it -w /workspace/a claude_container claude
 ```
 
 ### 使用 docker compose
@@ -114,7 +118,7 @@ cd claude-container/compose/
 cp .env.example .env
 vim .env
 docker compose up -d --build
-docker exec -it claude claude
+docker exec -it claude_container claude
 ```
 
 ## 文件说明
@@ -123,8 +127,9 @@ docker exec -it claude claude
 claude-container/
 ├── Dockerfile                    # 镜像构建
 ├── entrypoint.sh                 # UID/GID 映射 + 自动启动 proxy
+├── proxy-env.sh                  # 共享 proxy 配置（被脚本 source）
+├── claude-wrapper.sh             # docker exec 包装器（加载环境变量）
 ├── reload_proxy.sh               # 热重载：改配置不重启容器
-├── start_proxy.sh                # 独立启动 proxy（调试用）
 ├── claude-proxy.conf.example     # docker run 配置模板
 ├── compose/
 │   ├── docker-compose.yml        # compose 编排（可选）
