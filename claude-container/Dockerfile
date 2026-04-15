@@ -54,6 +54,5 @@ ENV SHELL=/bin/bash
 ENV TERM=xterm-256color
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
-ENV TZ=Asia/Shanghai
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["sh", "-c", "echo 'Claude Code container is ready!' && tail -f /dev/null"]
