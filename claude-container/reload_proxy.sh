@@ -9,7 +9,7 @@ kill $(pgrep -f "debug-proxy.py") 2>/dev/null && echo "[debug] Stopped old debug
 
 if [ "$ROUTER_MODE" = "router" ]; then
     # ===== Router mode =====
-    kill $(pgrep -f "ccr") 2>/dev/null && echo "[router] Stopped old router" || true
+    kill $(pgrep -f "claude-code-router") 2>/dev/null && echo "[router] Stopped old router" || true
     sleep 1
 
     # Regenerate config if no custom config

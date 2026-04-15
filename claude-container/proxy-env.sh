@@ -10,6 +10,7 @@ if [ -f "$CONF_FILE" ]; then
     PROXY_PORT=$(grep '^PROXY_PORT=' "$CONF_FILE" | cut -d= -f2-)
     ROUTER_MODE=$(grep '^ROUTER_MODE=' "$CONF_FILE" | cut -d= -f2-)
     ROUTER_CONFIG=$(grep '^ROUTER_CONFIG=' "$CONF_FILE" | cut -d= -f2-)
+    ROUTER_PORT=$(grep '^ROUTER_PORT=' "$CONF_FILE" | cut -d= -f2-)
     DEBUG=$(grep '^DEBUG=' "$CONF_FILE" | cut -d= -f2-)
     DEBUG_FULL=$(grep '^DEBUG_FULL=' "$CONF_FILE" | cut -d= -f2-)
 fi
