@@ -41,6 +41,7 @@ docker run -d --name claude_container \
     -v $(pwd):/workspace \
     -e USER_UID=$(id -u) \
     -e USER_GID=$(id -g) \
+    -e TZ=Asia/Shanghai \
     ghcr.io/dynamicheart/claude-code-toolkit/claude-code:latest
 ```
 
@@ -86,6 +87,7 @@ docker exec claude_container reload_proxy
 | `USER_UID` | `1000` | Host UID for file permission mapping |
 | `USER_GID` | `1000` | Host GID for file permission mapping |
 | `PROXY_CONF` | `/etc/claude-proxy.conf` | Config file path (overridable) |
+| `TZ` | `UTC` | Timezone (e.g. `Asia/Shanghai`, `America/New_York`) |
 
 ## Router Mode
 

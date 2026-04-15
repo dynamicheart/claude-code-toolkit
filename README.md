@@ -32,6 +32,7 @@ docker run -d --name claude_container \
     -v ~/claude-proxy.conf:/etc/claude-proxy.conf \
     -v $(pwd):/workspace \
     -e USER_UID=$(id -u) -e USER_GID=$(id -g) \
+    -e TZ=Asia/Shanghai \
     ghcr.io/dynamicheart/claude-code-toolkit/claude-code:latest
 
 # 3. Use
