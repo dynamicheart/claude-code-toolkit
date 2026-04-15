@@ -41,8 +41,11 @@ jobs:
         run: |
           DATE=$(date -u +%Y%m%d)
           SHA=${GITHUB_SHA::7}
-          VERSION=$(docker run --rm ghcr.io/${{ env.IMAGE_NAME }}:local cat /etc/claude-code-version 2>/dev/null || echo "unknown")
-          TAG="${DATE}-${SHA}-${VERSION}"
+          # Use --entrypoint to bypass entrypoint.sh, extract version number only
+          RAW=$(docker run --rm --entrypoint cat ghcr.io/${{ env.IMAGE_NAME }}:local /etc/claude-code-version 2>/dev/null || echo "unknown")
+          VERSION=$(echo "$RAW" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          VERSION=${VERSION:-unknown}
+          TAG="${DATE}-${SHA}-v${VERSION}"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "Building tags: latest, ${TAG}"
 
