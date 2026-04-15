@@ -10,7 +10,7 @@ FROM node:22-alpine
 #   less: view large files
 #   bash, su-exec: runtime
 #   python3, py3-pip: claude-code-proxy
-RUN apk add --no-cache git curl build-base less bash su-exec python3 py3-pip
+RUN apk add --no-cache git curl build-base less bash su-exec python3 py3-pip tzdata
 
 # Install claude-code-proxy and claude-code-router
 RUN pip install --break-system-packages -U claude-code-proxy flask requests
@@ -52,5 +52,8 @@ WORKDIR /workspace
 
 ENV SHELL=/bin/bash
 ENV TERM=xterm-256color
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV TZ=Asia/Shanghai
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["sh", "-c", "echo 'Claude Code container is ready!' && tail -f /dev/null"]
