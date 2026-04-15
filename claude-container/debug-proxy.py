@@ -26,12 +26,17 @@ def log(tag, msg):
 
 
 def log_full(tag, data):
-    """Write complete JSON to the full log file."""
+    """Write complete data to the full log file."""
     if not DEBUG_FULL:
         return
-    try:
-        text = json.dumps(data, indent=2, ensure_ascii=False)
-    except Exception:
+    if isinstance(data, str):
+        text = data
+    elif isinstance(data, dict) or isinstance(data, list):
+        try:
+            text = json.dumps(data, indent=2, ensure_ascii=False)
+        except Exception:
+            text = str(data)
+    else:
         text = str(data)
     with open(FULL_LOG, "a") as f:
         f.write(f"\n{'='*80}\n[{tag}]\n{text}\n")
