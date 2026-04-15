@@ -8,7 +8,19 @@ USER_UID=${USER_UID:-1000}
 USER_GID=${USER_GID:-1000}
 
 # Load config
+CONF_FILE=${PROXY_CONF:-/etc/claude-proxy.conf}
+if [ ! -f "$CONF_FILE" ]; then
+    echo "ERROR: Config file not found: ${CONF_FILE}"
+    echo "Mount it with: -v ~/claude-proxy.conf:${CONF_FILE}"
+    exit 1
+fi
 . /usr/local/bin/proxy-env.sh
+
+if [ -z "$VLLM_URL" ]; then
+    echo "ERROR: VLLM_URL is not set in ${CONF_FILE}"
+    echo "Add: VLLM_URL=http://<host>:<port>/v1"
+    exit 1
+fi
 
 # ---------- helper: health check ----------
 # Usage: wait_for_port <port> <name> <pid> <log_file>
@@ -35,9 +47,8 @@ wait_for_port() {
 }
 
 # ---------- Start claude-code-router ----------
-if [ -n "$VLLM_URL" ]; then
-    CCR_CONFIG_DIR="/root/.claude-code-router"
-    mkdir -p "$CCR_CONFIG_DIR"
+CCR_CONFIG_DIR="/root/.claude-code-router"
+mkdir -p "$CCR_CONFIG_DIR"
 
     # Strip /v1 from VLLM_URL to get base URL for backend debug proxy
     VLLM_BASE="${VLLM_URL%/v1}"
@@ -123,7 +134,6 @@ export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL}"
 export ANTHROPIC_AUTH_TOKEN="anyvalue"
 export ANTHROPIC_MODEL="$MODEL"
 ENVEOF
-fi
 
 # Drop privileges if non-root, otherwise run directly
 if [ "$USER_UID" -eq 0 ]; then
