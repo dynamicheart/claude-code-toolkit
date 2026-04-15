@@ -39,11 +39,22 @@ if [ -n "$VLLM_URL" ]; then
     CCR_CONFIG_DIR="/root/.claude-code-router"
     mkdir -p "$CCR_CONFIG_DIR"
 
+    # Strip /v1 from VLLM_URL to get base URL for backend debug proxy
+    VLLM_BASE="${VLLM_URL%/v1}"
+    VLLM_BASE="${VLLM_BASE%/}"
+    BACKEND_DEBUG_PORT=${BACKEND_DEBUG_PORT:-8084}
+
     if [ -n "$ROUTER_CONFIG" ] && [ -f "$ROUTER_CONFIG" ]; then
         cp "$ROUTER_CONFIG" "$CCR_CONFIG_DIR/config.json"
         echo "[router] Using custom config: ${ROUTER_CONFIG}"
     else
-        VLLM_CHAT_URL="${VLLM_URL%/}/chat/completions"
+        # When DEBUG=1, route ccr through backend debug proxy to capture OpenAI requests
+        if [ "$DEBUG" = "1" ]; then
+            VLLM_CHAT_URL="http://127.0.0.1:${BACKEND_DEBUG_PORT}/v1/chat/completions"
+        else
+            VLLM_CHAT_URL="${VLLM_URL%/}/chat/completions"
+        fi
+
         cat > "$CCR_CONFIG_DIR/config.json" <<CCREOF
 {
   "LOG": true,
@@ -67,6 +78,18 @@ CCREOF
         echo "[router] Generated config for ${MODEL} -> ${VLLM_CHAT_URL}"
     fi
 
+    # If DEBUG=1, start backend debug proxy (OpenAI layer: ccr -> provider)
+    if [ "$DEBUG" = "1" ]; then
+        BACKEND_LOG="/var/log/ccr2provider.log"
+        echo "[debug] Starting backend debug proxy :${BACKEND_DEBUG_PORT} -> ${VLLM_BASE} (OpenAI layer)"
+        TARGET_URL="$VLLM_BASE" DEBUG_PORT="$BACKEND_DEBUG_PORT" \
+            LAYER_TAG="openai" LOG_FILE="$BACKEND_LOG" \
+            FULL_LOG="/var/log/ccr2provider-full.log" \
+            python3 /opt/debug-proxy.py >> "$BACKEND_LOG" 2>&1 &
+        echo "[debug] PID: $!, log: ${BACKEND_LOG}"
+        sleep 1
+    fi
+
     ROUTER_LOG="/var/log/claude-router.log"
     echo "[router] Starting claude-code-router (port: ${ROUTER_PORT})"
     ccr start >> "$ROUTER_LOG" 2>&1 &
@@ -77,13 +100,15 @@ CCREOF
 
     export ANTHROPIC_AUTH_TOKEN="anyvalue"
 
-    # If DEBUG=1, start debug proxy between Claude Code and router
+    # If DEBUG=1, start frontend debug proxy (Anthropic layer: Claude Code -> ccr)
     if [ "$DEBUG" = "1" ]; then
-        DEBUG_LOG="/var/log/debug-proxy.log"
-        echo "[debug] Starting debug proxy :${DEBUG_PORT} -> :${ROUTER_PORT}"
-        PROXY_PORT="$ROUTER_PORT" DEBUG_PORT="$DEBUG_PORT" DEBUG_FULL="$DEBUG_FULL" \
-            python3 /opt/debug-proxy.py >> "$DEBUG_LOG" 2>&1 &
-        echo "[debug] PID: $!, log: ${DEBUG_LOG}"
+        FRONTEND_LOG="/var/log/cc2ccr.log"
+        echo "[debug] Starting frontend debug proxy :${DEBUG_PORT} -> :${ROUTER_PORT} (Anthropic layer)"
+        TARGET_URL="http://127.0.0.1:${ROUTER_PORT}" DEBUG_PORT="$DEBUG_PORT" \
+            LAYER_TAG="anthropic" LOG_FILE="$FRONTEND_LOG" \
+            FULL_LOG="/var/log/cc2ccr-full.log" \
+            python3 /opt/debug-proxy.py >> "$FRONTEND_LOG" 2>&1 &
+        echo "[debug] PID: $!, log: ${FRONTEND_LOG}"
         sleep 1
         export ANTHROPIC_BASE_URL="http://127.0.0.1:${DEBUG_PORT}"
     else

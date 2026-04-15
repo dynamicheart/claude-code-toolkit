@@ -1,33 +1,32 @@
 #!/usr/bin/env python3
-"""Debug proxy: sits between Claude Code and claude-code-proxy.
-Logs requests (model, tools) and responses (content, stop_reason).
-Start with DEBUG=1 in claude-proxy.conf or environment.
-Set DEBUG_FULL=1 to log complete request/response bodies."""
+"""Debug proxy: transparent HTTP proxy that logs requests and responses.
+Can sit at any layer: Claude Code ↔ router, or router ↔ LLM provider.
+Start with DEBUG=1 in claude-proxy.conf or environment."""
 
 import os
 import json
 from flask import Flask, request, Response
 import requests
 
-TARGET_PORT = os.environ.get("PROXY_PORT", "8082")
-TARGET_URL = f"http://127.0.0.1:{TARGET_PORT}"
+# TARGET_URL: where to forward requests (supports remote hosts)
+# If TARGET_URL is set, use it directly; otherwise construct from PROXY_PORT
+TARGET_URL = os.environ.get("TARGET_URL", f"http://127.0.0.1:{os.environ.get('PROXY_PORT', '3456')}")
 DEBUG_PORT = int(os.environ.get("DEBUG_PORT", "8083"))
 DEBUG_TOOLS = os.environ.get("DEBUG_TOOLS", "1") == "1"
-DEBUG_FULL = os.environ.get("DEBUG_FULL", "0") == "1"
+LAYER_TAG = os.environ.get("LAYER_TAG", "anthropic")  # "anthropic" or "openai"
 
-FULL_LOG = "/var/log/debug-proxy-full.log"
+LOG_FILE = os.environ.get("LOG_FILE", "/var/log/cc2ccr.log")
+FULL_LOG = os.environ.get("FULL_LOG", "/var/log/cc2ccr-full.log")
 
 app = Flask(__name__)
 
 
 def log(tag, msg):
-    print(f"[debug-proxy] [{tag}] {msg}", flush=True)
+    print(f"[debug-proxy:{LAYER_TAG}] [{tag}] {msg}", flush=True)
 
 
 def log_full(tag, data):
     """Write complete data to the full log file."""
-    if not DEBUG_FULL:
-        return
     if isinstance(data, str):
         text = data
     elif isinstance(data, (dict, list)):
@@ -219,7 +218,6 @@ def health():
 
 
 if __name__ == "__main__":
-    log("START", f"Debug proxy :{DEBUG_PORT} -> claude-code-proxy :{TARGET_PORT}")
-    if DEBUG_FULL:
-        log("START", f"Full logging enabled -> {FULL_LOG}")
+    log("START", f"Debug proxy [layer={LAYER_TAG}] :{DEBUG_PORT} -> {TARGET_URL}")
+    log("START", f"Full logging -> {FULL_LOG}")
     app.run(host="127.0.0.1", port=DEBUG_PORT)

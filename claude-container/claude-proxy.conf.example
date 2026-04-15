@@ -1,10 +1,10 @@
-# vLLM service URL (OpenAI-compatible protocol)
+# LLM service URL (OpenAI-compatible protocol, e.g. vLLM, SGLang)
 VLLM_URL=http://localhost:8000/v1
 
-# Model name on vLLM (also used as Claude Code model name)
+# Model name on the LLM service (also used as Claude Code model name)
 MODEL=glm-5
 
-# API key (keep default if vLLM has no auth)
+# API key (keep default if provider has no auth)
 API_KEY=sk-placeholder
 
 # Custom claude-code-router config (optional)
@@ -12,10 +12,6 @@ API_KEY=sk-placeholder
 # Example: docker run -v ./my-router-config.json:/etc/claude-router-config.json ...
 #ROUTER_CONFIG=/etc/claude-router-config.json
 
-# Debug mode: set to 1 to enable request/response logging proxy
-# Logs model mapping, tool calls, and responses to /var/log/debug-proxy.log
+# Debug mode: set to 1 to enable two-layer debug proxy with full request/response logging
+# Logs to /var/log/cc2ccr.log (Anthropic layer) and /var/log/ccr2provider.log (OpenAI layer)
 #DEBUG=1
-
-# Full debug: set to 1 to log complete request/response bodies
-# Written to /var/log/debug-proxy-full.log (can be very large)
-#DEBUG_FULL=1

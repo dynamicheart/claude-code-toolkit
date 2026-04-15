@@ -1,18 +1,19 @@
 # Claude Code Container
 
-Connect Claude Code to your self-hosted vLLM service (OpenAI-compatible) via a single Docker image.
+Connect Claude Code to your self-hosted LLM service (vLLM, SGLang, or any OpenAI-compatible endpoint) via a single Docker image.
 
 [中文文档](README.zh-CN.md)
 
 ## Architecture
 
 ```
-Claude Code → claude-code-router (:3456) → vLLM
+Claude Code → claude-code-router (:3456) → LLM Provider
 ```
 
 With debug proxy (`DEBUG=1`):
 ```
-Claude Code → debug-proxy (:8083) → claude-code-router (:3456) → vLLM
+Claude Code → debug-proxy (:8083) → claude-code-router (:3456) → debug-proxy (:8084) → LLM Provider
+               [cc2ccr.log]                                        [ccr2provider.log]
 ```
 
 Uses [claude-code-router](https://github.com/musistudio/claude-code-router) as the backend, with built-in `enhancetool` for tool_use error tolerance.
@@ -60,12 +61,11 @@ docker exec claude_container reload_proxy
 
 | Variable | Default | Description |
 |---|---|---|
-| `VLLM_URL` | *(required)* | vLLM service URL (OpenAI-compatible) |
-| `MODEL` | `glm-5` | Model name on vLLM |
-| `API_KEY` | `sk-placeholder` | API key (keep default if vLLM has no auth) |
+| `VLLM_URL` | *(required)* | LLM service URL (OpenAI-compatible, e.g. vLLM, SGLang) |
+| `MODEL` | `glm-5` | Model name on the LLM service |
+| `API_KEY` | `sk-placeholder` | API key (keep default if provider has no auth) |
 | `ROUTER_CONFIG` | *(none)* | Custom claude-code-router config path |
-| `DEBUG` | `0` | Set to `1` to enable debug proxy |
-| `DEBUG_FULL` | `0` | Set to `1` to log complete request/response bodies |
+| `DEBUG` | `0` | Set to `1` to enable two-layer debug proxy with full logging |
 
 ### Environment Variables
 
@@ -95,18 +95,22 @@ With `ROUTER_CONFIG=/etc/claude-router-config.json` in your conf file.
 
 ## Debug Proxy
 
-For diagnosing tool_use failures and streaming issues:
+Two-layer request interception for diagnosing tool_use failures and streaming issues:
 
 ```bash
 # Enable in config
 echo "DEBUG=1" >> ~/claude-proxy.conf
 docker exec claude_container reload_proxy
 
-# View logs
-docker exec claude_container tail -f /var/log/debug-proxy.log
+# Anthropic layer (Claude Code ↔ ccr)
+docker exec claude_container tail -f /var/log/cc2ccr.log
 
-# Full request/response bodies (DEBUG_FULL=1)
-docker exec claude_container cat /var/log/debug-proxy-full.log
+# OpenAI layer (ccr ↔ provider)
+docker exec claude_container tail -f /var/log/ccr2provider.log
+
+# Full request/response bodies
+docker exec claude_container cat /var/log/cc2ccr-full.log
+docker exec claude_container cat /var/log/ccr2provider-full.log
 ```
 
 ## Common Scenarios

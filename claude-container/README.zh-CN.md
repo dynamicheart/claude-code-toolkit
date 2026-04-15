@@ -1,18 +1,19 @@
 # Claude Code 容器方案
 
-一个 Docker 镜像，将 Claude Code 接入自建的 vLLM 服务（OpenAI 协议）。
+一个 Docker 镜像，将 Claude Code 接入自建的 LLM 服务（vLLM、SGLang 或任何 OpenAI 协议兼容端点）。
 
 [English](README.md)
 
 ## 架构
 
 ```
-Claude Code → claude-code-router (:3456) → vLLM
+Claude Code → claude-code-router (:3456) → LLM Provider
 ```
 
 开启 Debug 代理（`DEBUG=1`）：
 ```
-Claude Code → debug-proxy (:8083) → claude-code-router (:3456) → vLLM
+Claude Code → debug-proxy (:8083) → claude-code-router (:3456) → debug-proxy (:8084) → LLM Provider
+               [cc2ccr.log]                                        [ccr2provider.log]
 ```
 
 使用 [claude-code-router](https://github.com/musistudio/claude-code-router) 作为后端，内置 `enhancetool` 对 tool_use 做容错。
@@ -60,12 +61,11 @@ docker exec claude_container reload_proxy
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `VLLM_URL` | *(必填)* | vLLM 服务地址（OpenAI 协议） |
-| `MODEL` | `glm-5` | vLLM 上的模型名称 |
-| `API_KEY` | `sk-placeholder` | API Key（vLLM 不需要认证时保持默认） |
+| `VLLM_URL` | *(必填)* | LLM 服务地址（OpenAI 协议，支持 vLLM、SGLang 等） |
+| `MODEL` | `glm-5` | LLM 服务上的模型名称 |
+| `API_KEY` | `sk-placeholder` | API Key（服务端不需要认证时保持默认） |
 | `ROUTER_CONFIG` | *(无)* | 自定义 claude-code-router 配置文件路径 |
-| `DEBUG` | `0` | 设为 `1` 开启 debug 代理 |
-| `DEBUG_FULL` | `0` | 设为 `1` 记录完整请求/响应 body |
+| `DEBUG` | `0` | 设为 `1` 开启两层 debug 代理，记录完整请求/响应 |
 
 ### 环境变量
 
@@ -95,18 +95,22 @@ docker run -d --name claude_container \
 
 ## Debug 代理
 
-排查 tool_use 失败和流式传输问题：
+两层请求拦截，排查 tool_use 失败和流式传输问题：
 
 ```bash
 # 在配置中开启
 echo "DEBUG=1" >> ~/claude-proxy.conf
 docker exec claude_container reload_proxy
 
-# 查看日志
-docker exec claude_container tail -f /var/log/debug-proxy.log
+# Anthropic 层日志（Claude Code ↔ ccr）
+docker exec claude_container tail -f /var/log/cc2ccr.log
 
-# 完整请求/响应（需 DEBUG_FULL=1）
-docker exec claude_container cat /var/log/debug-proxy-full.log
+# OpenAI 层日志（ccr ↔ Provider）
+docker exec claude_container tail -f /var/log/ccr2provider.log
+
+# 完整请求/响应 body
+docker exec claude_container cat /var/log/cc2ccr-full.log
+docker exec claude_container cat /var/log/ccr2provider-full.log
 ```
 
 ## 常见场景
