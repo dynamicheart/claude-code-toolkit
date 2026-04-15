@@ -51,5 +51,6 @@ ENV CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE=1
 WORKDIR /workspace
 
 ENV SHELL=/bin/bash
+ENV TERM=xterm-256color
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["sh", "-c", "echo 'Claude Code container is ready!' && tail -f /dev/null"]
