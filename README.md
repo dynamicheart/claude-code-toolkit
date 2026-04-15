@@ -6,17 +6,30 @@ Connect Claude Code to self-hosted vLLM services for offline development and tes
 
 ## Architecture
 
-Two backend modes — switch with `ROUTER_MODE` in config:
-
 ```
-Proxy mode (default):  Claude Code → claude-code-proxy → vLLM
-Router mode:           Claude Code → claude-code-router → vLLM
-Debug mode (DEBUG=1):  Claude Code → debug-proxy → proxy/router → vLLM
+Your terminal
+  │
+  ▼
+docker exec -it claude_container claude
+  │
+  ▼
+┌─────────────────────────────┐
+│       claude container       │
+│                             │
+│  Claude Code CLI            │
+│       ▲                     │
+│       │ http://127.0.0.1:3456
+│  claude-code-router         │
+└───────┼─────────────────────┘
+        │
+        ▼
+  vLLM Service (OpenAI protocol)
+  http://<ip>:<port>/v1
 ```
 
 ## claude-container
 
-One Docker image with Claude Code + claude-code-proxy + claude-code-router, connecting to any OpenAI-compatible vLLM endpoint.
+One Docker image with Claude Code + [claude-code-router](https://github.com/musistudio/claude-code-router), connecting to any OpenAI-compatible vLLM endpoint.
 
 See [claude-container/README.md](claude-container/README.md) | [中文文档](claude-container/README.zh-CN.md)
 
@@ -44,7 +57,7 @@ docker exec -it -w /workspace/my-project claude_container claude
 
 ### Features
 
-- **Two backend modes**: `proxy` (lightweight) or `router` (model routing, enhancetool, multi-provider)
+- **claude-code-router**: model routing, `enhancetool` (tool_use error tolerance), multi-provider
 - **Debug proxy**: built-in request/response logging for diagnosing tool_use and streaming issues
-- **Hot-reload**: switch vLLM URL or mode without restarting the container
+- **Hot-reload**: switch vLLM URL or config without restarting the container
 - **Offline-friendly**: all telemetry and auto-updates disabled

@@ -12,8 +12,8 @@ FROM node:22-alpine
 #   python3, py3-pip: claude-code-proxy
 RUN apk add --no-cache git curl build-base less bash su-exec python3 py3-pip tzdata
 
-# Install claude-code-proxy and claude-code-router
-RUN pip install --break-system-packages -U claude-code-proxy flask requests
+# Install claude-code-router and debug proxy dependencies
+RUN pip install --break-system-packages -U flask requests
 RUN npm install -g @musistudio/claude-code-router
 
 # Install Claude Code CLI
