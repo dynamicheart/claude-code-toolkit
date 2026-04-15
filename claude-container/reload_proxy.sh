@@ -4,13 +4,14 @@ set -e
 
 . /usr/local/bin/proxy-env.sh
 
-# Kill old processes
+# Kill old processes (both modes, in case of mode switch)
 kill $(pgrep -f "debug-proxy.py") 2>/dev/null && echo "[debug] Stopped old debug proxy" || true
+kill $(pgrep -f "claude-code-proxy") 2>/dev/null && echo "[proxy] Stopped old proxy" || true
+kill $(pgrep -f "claude-code-router") 2>/dev/null && echo "[router] Stopped old router" || true
+sleep 1
 
 if [ "$ROUTER_MODE" = "router" ]; then
     # ===== Router mode =====
-    kill $(pgrep -f "claude-code-router") 2>/dev/null && echo "[router] Stopped old router" || true
-    sleep 1
 
     # Regenerate config if no custom config
     CCR_CONFIG_DIR="/root/.claude-code-router"
@@ -52,9 +53,6 @@ CCREOF
 
 else
     # ===== Proxy mode (default) =====
-    kill $(pgrep -f "claude-code-proxy") 2>/dev/null && echo "[proxy] Stopped old proxy" || true
-    sleep 1
-
     echo "[proxy] Starting claude-code-proxy -> ${VLLM_URL} (port: ${PROXY_PORT})"
     claude-code-proxy --port "$PROXY_PORT" &
     sleep 2
