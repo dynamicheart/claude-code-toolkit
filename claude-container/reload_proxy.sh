@@ -17,7 +17,7 @@ sleep 2
 if [ "$DEBUG" = "1" ]; then
     DEBUG_LOG="/var/log/debug-proxy.log"
     echo "[debug] Starting debug proxy :${DEBUG_PORT} -> :${PROXY_PORT}"
-    PROXY_PORT="$PROXY_PORT" DEBUG_PORT="$DEBUG_PORT" \
+    PROXY_PORT="$PROXY_PORT" DEBUG_PORT="$DEBUG_PORT" DEBUG_FULL="$DEBUG_FULL" \
         python3 /opt/debug-proxy.py >> "$DEBUG_LOG" 2>&1 &
     echo "[debug] PID: $!, log: ${DEBUG_LOG}"
     sleep 1

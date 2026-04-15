@@ -9,6 +9,7 @@ if [ -f "$CONF_FILE" ]; then
     API_KEY=$(grep '^API_KEY=' "$CONF_FILE" | cut -d= -f2-)
     PROXY_PORT=$(grep '^PROXY_PORT=' "$CONF_FILE" | cut -d= -f2-)
     DEBUG=$(grep '^DEBUG=' "$CONF_FILE" | cut -d= -f2-)
+    DEBUG_FULL=$(grep '^DEBUG_FULL=' "$CONF_FILE" | cut -d= -f2-)
 fi
 
 VLLM_URL=${VLLM_URL}
@@ -16,6 +17,7 @@ MODEL=${MODEL:-glm-5}
 API_KEY=${API_KEY:-sk-placeholder}
 PROXY_PORT=${PROXY_PORT:-8082}
 DEBUG=${DEBUG:-0}
+DEBUG_FULL=${DEBUG_FULL:-0}
 DEBUG_PORT=${DEBUG_PORT:-8083}
 
 export OPENAI_API_KEY="$API_KEY"

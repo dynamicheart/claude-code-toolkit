@@ -64,7 +64,7 @@ if [ -n "$VLLM_URL" ]; then
     if [ "$DEBUG" = "1" ]; then
         DEBUG_LOG="/var/log/debug-proxy.log"
         echo "[debug] Starting debug proxy :${DEBUG_PORT} -> :${PROXY_PORT}"
-        PROXY_PORT="$PROXY_PORT" DEBUG_PORT="$DEBUG_PORT" \
+        PROXY_PORT="$PROXY_PORT" DEBUG_PORT="$DEBUG_PORT" DEBUG_FULL="$DEBUG_FULL" \
             python3 /opt/debug-proxy.py >> "$DEBUG_LOG" 2>&1 &
         DEBUG_PID=$!
         echo "[debug] PID: ${DEBUG_PID}, log: ${DEBUG_LOG}"

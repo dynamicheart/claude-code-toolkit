@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Debug proxy: sits between Claude Code and claude-code-proxy.
 Logs requests (model, tools) and responses (content, stop_reason).
-Start with DEBUG=1 in claude-proxy.conf or environment."""
+Start with DEBUG=1 in claude-proxy.conf or environment.
+Set DEBUG_FULL=1 to log complete request/response bodies."""
 
 import os
 import sys
@@ -13,12 +14,27 @@ TARGET_PORT = os.environ.get("PROXY_PORT", "8082")
 TARGET_URL = f"http://127.0.0.1:{TARGET_PORT}"
 DEBUG_PORT = int(os.environ.get("DEBUG_PORT", "8083"))
 DEBUG_TOOLS = os.environ.get("DEBUG_TOOLS", "1") == "1"
+DEBUG_FULL = os.environ.get("DEBUG_FULL", "0") == "1"
+
+FULL_LOG = "/var/log/debug-proxy-full.log"
 
 app = Flask(__name__)
 
 
 def log(tag, msg):
     print(f"[debug-proxy] [{tag}] {msg}", flush=True)
+
+
+def log_full(tag, data):
+    """Write complete JSON to the full log file."""
+    if not DEBUG_FULL:
+        return
+    try:
+        text = json.dumps(data, indent=2, ensure_ascii=False)
+    except Exception:
+        text = str(data)
+    with open(FULL_LOG, "a") as f:
+        f.write(f"\n{'='*80}\n[{tag}]\n{text}\n")
 
 
 @app.route("/v1/<path:path>", methods=["GET", "POST"])
@@ -43,6 +59,7 @@ def proxy(path):
         tool_names.append(name)
 
     log("REQ", f"POST /v1/{path} model={model} stream={stream} tools({len(tools)}): {tool_names}")
+    log_full("REQ", data)
 
     # Log last message (usually tool_result or user message)
     if messages:
@@ -82,7 +99,7 @@ def proxy(path):
                     yield chunk
             # Log streamed response summary
             full = b"".join(chunks).decode("utf-8", errors="replace")
-            # Extract tool_use from SSE data
+            log_full("RESP:stream", full)
             for line in full.split("\n"):
                 if line.startswith("data: ") and "tool_use" in line:
                     log("RESP:stream", f"  tool_use chunk: {line[:300]}")
@@ -95,6 +112,7 @@ def proxy(path):
         resp = requests.post(url, headers=headers, json=data)
         try:
             body = resp.json()
+            log_full("RESP", body)
             stop = body.get("stop_reason", "?")
             content = body.get("content", [])
             types = [c.get("type", "?") for c in content] if isinstance(content, list) else []
@@ -106,6 +124,7 @@ def proxy(path):
                     log("RESP", f"  text: {c.get('text', '')[:200]}")
         except Exception:
             log("RESP", f"status={resp.status_code} body={resp.text[:300]}")
+            log_full("RESP:raw", resp.text)
         return Response(resp.content, status=resp.status_code,
                         content_type=resp.headers.get("Content-Type"))
 
@@ -117,4 +136,6 @@ def health():
 
 if __name__ == "__main__":
     log("START", f"Debug proxy :{DEBUG_PORT} -> claude-code-proxy :{TARGET_PORT}")
+    if DEBUG_FULL:
+        log("START", f"Full logging enabled -> {FULL_LOG}")
     app.run(host="127.0.0.1", port=DEBUG_PORT)

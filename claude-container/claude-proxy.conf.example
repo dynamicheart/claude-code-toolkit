@@ -13,3 +13,7 @@ PROXY_PORT=8082
 # Debug mode: set to 1 to enable request/response logging proxy
 # Logs model mapping, tool calls, and responses to /var/log/debug-proxy.log
 #DEBUG=1
+
+# Full debug: set to 1 to log complete request/response bodies
+# Written to /var/log/debug-proxy-full.log (can be very large)
+#DEBUG_FULL=1
