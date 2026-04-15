@@ -7,8 +7,18 @@ MODEL=glm-5
 # API key (keep default if vLLM has no auth)
 API_KEY=sk-placeholder
 
-# claude-code-proxy listen port
+# Router mode: "proxy" or "router"
+#   proxy  — use claude-code-proxy (lightweight, Anthropic->OpenAI translation)
+#   router — use claude-code-router (model routing, enhancetool, multi-provider)
+#ROUTER_MODE=router
+
+# claude-code-proxy listen port (only for ROUTER_MODE=proxy)
 PROXY_PORT=8082
+
+# Custom claude-code-router config (only for ROUTER_MODE=router)
+# Mount your config.json to this path; if not set, auto-generated from above settings
+# Example: docker run -v ./my-router-config.json:/etc/claude-router-config.json ...
+#ROUTER_CONFIG=/etc/claude-router-config.json
 
 # Debug mode: set to 1 to enable request/response logging proxy
 # Logs model mapping, tool calls, and responses to /var/log/debug-proxy.log

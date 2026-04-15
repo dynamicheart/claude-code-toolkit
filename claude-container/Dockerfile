@@ -12,8 +12,9 @@ FROM node:22-alpine
 #   python3, py3-pip: claude-code-proxy
 RUN apk add --no-cache git curl build-base less bash su-exec python3 py3-pip
 
-# Install claude-code-proxy
+# Install claude-code-proxy and claude-code-router
 RUN pip install --break-system-packages -U claude-code-proxy flask requests
+RUN npm install -g @musistudio/claude-code-router
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code@latest \
