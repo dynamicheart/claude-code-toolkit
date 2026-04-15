@@ -6,25 +6,21 @@ Connect Claude Code to your self-hosted vLLM service (OpenAI-compatible) via a s
 
 ## Architecture
 
+Two backend modes available — switch with `ROUTER_MODE` in config:
+
+**Proxy mode** (default): lightweight Anthropic → OpenAI translation
 ```
-Your terminal
-  │
-  ▼
-docker exec -it claude_container claude
-  │
-  ▼
-┌─────────────────────────────┐
-│       claude container       │
-│                             │
-│  Claude Code CLI            │
-│       ▲                     │
-│       │ http://127.0.0.1:8082
-│  claude-code-proxy          │
-└───────┼─────────────────────┘
-        │
-        ▼
-  vLLM Service (OpenAI protocol)
-  http://<ip>:<port>/v1
+Claude Code → claude-code-proxy (:8082) → vLLM
+```
+
+**Router mode**: model routing, enhancetool, multi-provider ([claude-code-router](https://github.com/musistudio/claude-code-router))
+```
+Claude Code → claude-code-router (:3456) → vLLM
+```
+
+**With debug proxy** (`DEBUG=1`): intercepts and logs all requests/responses
+```
+Claude Code → debug-proxy (:8083) → proxy/router → vLLM
 ```
 
 ## Quick Start
@@ -77,7 +73,11 @@ docker exec claude_container reload_proxy
 | `VLLM_URL` | *(required)* | vLLM service URL (OpenAI-compatible) |
 | `MODEL` | `glm-5` | Model name (mapped to BIG_MODEL / MIDDLE_MODEL / SMALL_MODEL) |
 | `API_KEY` | `sk-placeholder` | API key (keep default if vLLM has no auth) |
-| `PROXY_PORT` | `8082` | claude-code-proxy listen port |
+| `ROUTER_MODE` | `proxy` | Backend mode: `proxy` (claude-code-proxy) or `router` (claude-code-router) |
+| `PROXY_PORT` | `8082` | claude-code-proxy listen port (proxy mode only) |
+| `ROUTER_CONFIG` | *(none)* | Custom claude-code-router config path (router mode only) |
+| `DEBUG` | `0` | Set to `1` to enable debug proxy (request/response logging) |
+| `DEBUG_FULL` | `0` | Set to `1` to log complete request/response bodies |
 
 ### Environment Variables
 
@@ -86,6 +86,64 @@ docker exec claude_container reload_proxy
 | `USER_UID` | `1000` | Host UID for file permission mapping |
 | `USER_GID` | `1000` | Host GID for file permission mapping |
 | `PROXY_CONF` | `/etc/claude-proxy.conf` | Config file path (overridable) |
+
+## Router Mode
+
+Use [claude-code-router](https://github.com/musistudio/claude-code-router) as the backend for model routing, `enhancetool` transformer (tool_use error tolerance), and multi-provider support.
+
+```bash
+# Simple: auto-generate config from VLLM_URL/MODEL/API_KEY
+echo "ROUTER_MODE=router" >> ~/claude-proxy.conf
+docker exec claude_container reload_proxy
+
+# Advanced: mount a custom claude-code-router config
+docker run -d --name claude_container \
+    -v ~/claude-proxy.conf:/etc/claude-proxy.conf \
+    -v ~/my-router-config.json:/etc/claude-router-config.json \
+    -v $(pwd):/workspace \
+    -e USER_UID=$(id -u) \
+    -e USER_GID=$(id -g) \
+    ghcr.io/dynamicheart/claude-code-toolkit/claude-code:latest
+```
+
+With `ROUTER_CONFIG=/etc/claude-router-config.json` in your conf file.
+
+## Debug Proxy
+
+A built-in debug proxy for diagnosing tool_use failures, streaming issues, and model compatibility problems.
+
+### Enable
+
+Add to `claude-proxy.conf`:
+```
+DEBUG=1
+DEBUG_FULL=1
+```
+
+### Log files
+
+| File | Content |
+|---|---|
+| `/var/log/debug-proxy.log` | Summary: model, tool names, stop_reason, SSE events |
+| `/var/log/debug-proxy-full.log` | Complete request/response bodies (when `DEBUG_FULL=1`) |
+
+### View logs
+
+```bash
+# Real-time summary
+docker exec claude_container tail -f /var/log/debug-proxy.log
+
+# Full request/response bodies
+docker exec claude_container cat /var/log/debug-proxy-full.log
+```
+
+### What it logs
+
+- **Request**: model, stream mode, tool list, last message content
+- **SSE events** (real-time): `message_start`, `content_block_start` (tool_use name/id), `content_block_delta` (input_json, text), `message_delta` (stop_reason, output_tokens)
+- **Response** (non-stream): status, stop_reason, content types, tool_use details
+
+Works with both proxy and router modes.
 
 ## Common Scenarios
 
@@ -126,11 +184,12 @@ docker exec -it claude_container claude
 ```
 claude-container/
 ├── Dockerfile                    # Image build
-├── entrypoint.sh                 # UID/GID mapping + auto-start proxy
-├── proxy-env.sh                  # Shared proxy config (sourced by scripts)
+├── entrypoint.sh                 # UID/GID mapping + auto-start backend
+├── proxy-env.sh                  # Shared config (sourced by scripts)
 ├── claude-wrapper.sh             # Wrapper for docker exec (sources env)
-├── reload_proxy.sh               # Hot-reload proxy without restart
-├── claude-proxy.conf.example     # Config template for docker run
+├── reload_proxy.sh               # Hot-reload without restart
+├── debug-proxy.py                # Debug proxy for request/response logging
+├── claude-proxy.conf.example     # Config template
 ├── compose/
 │   ├── docker-compose.yml        # Compose orchestration (optional)
 │   └── .env.example              # Compose config template
@@ -142,7 +201,9 @@ claude-container/
 | Tool | Purpose |
 |---|---|
 | Claude Code CLI | AI coding assistant |
-| claude-code-proxy | API protocol conversion (OpenAI -> Anthropic) |
+| claude-code-proxy | API protocol conversion (Anthropic → OpenAI) |
+| claude-code-router | Model routing, enhancetool, multi-provider |
+| debug-proxy | Request/response logging for debugging |
 | git | Version control |
 | curl | Network requests |
 | build-base (gcc/make) | Compile native dependencies |
