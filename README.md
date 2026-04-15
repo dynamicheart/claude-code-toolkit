@@ -4,10 +4,29 @@
 
 Connect Claude Code to self-hosted LLM services (vLLM, SGLang, or any OpenAI-compatible endpoint) for offline development and testing model agent capabilities.
 
+Powered by [claude-code-router](https://github.com/musistudio/claude-code-router) — model routing with `enhancetool` for tool_use error tolerance.
+
 ## Architecture
 
 ```
-Claude Code → claude-code-router (:3456) → LLM Provider (OpenAI protocol)
+Your terminal
+  │
+  ▼
+docker exec -it claude_container claude
+  │
+  ▼
+┌─────────────────────────────────┐
+│         Docker Container        │
+│                                 │
+│  Claude Code CLI                │
+│       │                         │
+│  claude-code-router (:3456)     │
+│    (enhancetool + routing)      │
+└───────┼─────────────────────────┘
+        │
+        ▼
+  LLM Provider (OpenAI protocol)
+  vLLM / SGLang / ...
 ```
 
 With debug proxy (`DEBUG=1`):
