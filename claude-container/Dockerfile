@@ -13,7 +13,7 @@ FROM node:22-alpine
 RUN apk add --no-cache git curl build-base less bash su-exec python3 py3-pip
 
 # Install claude-code-proxy
-RUN pip install --break-system-packages -U claude-code-proxy
+RUN pip install --break-system-packages -U claude-code-proxy flask requests
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code@latest \
@@ -26,6 +26,7 @@ COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY reload_proxy.sh /usr/local/bin/reload_proxy.sh
 COPY claude-wrapper.sh /usr/local/bin/claude-wrapper.sh
 COPY proxy-env.sh /usr/local/bin/proxy-env.sh
+COPY debug-proxy.py /opt/debug-proxy.py
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/reload_proxy.sh /usr/local/bin/claude-wrapper.sh /usr/local/bin/proxy-env.sh
 
 # Rename real claude -> claude.real, wrapper -> claude

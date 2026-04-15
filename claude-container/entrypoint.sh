@@ -58,13 +58,28 @@ if [ -n "$VLLM_URL" ]; then
         echo "[proxy] WARNING: proxy not responding after 30s (PID ${PROXY_PID} still alive)"
     fi
 
-    export ANTHROPIC_BASE_URL="http://127.0.0.1:${PROXY_PORT}"
     export ANTHROPIC_AUTH_TOKEN="anyvalue"
+
+    # If DEBUG=1, start debug proxy between Claude Code and claude-code-proxy
+    if [ "$DEBUG" = "1" ]; then
+        DEBUG_LOG="/var/log/debug-proxy.log"
+        echo "[debug] Starting debug proxy :${DEBUG_PORT} -> :${PROXY_PORT}"
+        PROXY_PORT="$PROXY_PORT" DEBUG_PORT="$DEBUG_PORT" \
+            python3 /opt/debug-proxy.py >> "$DEBUG_LOG" 2>&1 &
+        DEBUG_PID=$!
+        echo "[debug] PID: ${DEBUG_PID}, log: ${DEBUG_LOG}"
+        sleep 1
+        # Claude Code talks to debug proxy, which forwards to claude-code-proxy
+        export ANTHROPIC_BASE_URL="http://127.0.0.1:${DEBUG_PORT}"
+    else
+        export ANTHROPIC_BASE_URL="http://127.0.0.1:${PROXY_PORT}"
+    fi
+
     echo "[proxy] Claude will use ${ANTHROPIC_BASE_URL}"
 
     # Persist env vars so docker exec can pick them up
     cat > /etc/claude-proxy.env <<ENVEOF
-export ANTHROPIC_BASE_URL="http://127.0.0.1:${PROXY_PORT}"
+export ANTHROPIC_BASE_URL="${ANTHROPIC_BASE_URL}"
 export ANTHROPIC_AUTH_TOKEN="anyvalue"
 export OPENAI_API_KEY="$API_KEY"
 export OPENAI_BASE_URL="$VLLM_URL"

@@ -9,3 +9,7 @@ API_KEY=sk-placeholder
 
 # claude-code-proxy listen port
 PROXY_PORT=8082
+
+# Debug mode: set to 1 to enable request/response logging proxy
+# Logs model mapping, tool calls, and responses to /var/log/debug-proxy.log
+#DEBUG=1
